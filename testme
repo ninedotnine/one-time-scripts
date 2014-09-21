@@ -1,0 +1,10 @@
+#!/bin/dash
+
+boldon=$(tput bold)
+boldoff=$(tput sgr0)
+for filename in $(ls -1 "./test"); do
+    echo "$boldon $filename $boldoff" 
+    java Scanner < "./test/$filename" > output.txt
+    java -jar "./Scantest/scanner.jar" < "./test/$filename" > output.txt.2
+    diff --brief "./output.txt" "./output.txt.2" && echo "cool!"
+done
