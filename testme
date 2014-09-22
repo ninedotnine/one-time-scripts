@@ -1,21 +1,31 @@
 #!/bin/dash
 
+# makes output prettier
 boldon=$(tput bold)
 boldoff=$(tput sgr0)
+
+# will be returned to the os
+exit_status=0
 
 javac *.java
 
 if [ "$#" -eq 1 ]; then
+    # if argument is provided, test only that file 
     filename="$1"
     java Scanner < "$filename" > mine.txt
-    java -jar "./scantest/scanner.jar" < "$filename" > ref.txt
+    java -jar "./Scantest/scanner.jar" < "$filename" > ref.txt
+    # if files aren't equal, drop into vimdiff
     diff --brief "mine.txt" "ref.txt" \
-        && echo "cool!" || vimdiff "mine.txt" "ref.txt" 
+        && echo "cool!" || vimdiff -R "mine.txt" "ref.txt" 
 else
+    # else just compare everything in the test directory
     for filename in $(ls -1 "./test"); do
         echo "$boldon $filename $boldoff" 
         java Scanner < "./test/$filename" > mine.txt
-        java -jar "./scantest/scanner.jar" < "./test/$filename" > ref.txt
-        diff --brief "mine.txt" "ref.txt" && echo "cool!"
+        java -jar "./Scantest/scanner.jar" < "./test/$filename" > ref.txt
+        diff --brief "mine.txt" "ref.txt" \
+            && echo "cool!" || exit_status=$((exit_status+1))
     done
 fi
+
+return "$exit_status"
