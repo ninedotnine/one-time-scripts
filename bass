@@ -1,0 +1,87 @@
+#!/bin/bash
+
+# bass - automatically handle ext stack machine assembly 
+# written in bash instead of sh to use arrays
+# last updated oct 8 2014
+
+usage () {
+    echo "bass - automatically handle ext stack machine assembly"
+    echo "similar to sax \$1 | sxxl | sxx"
+    echo "arguments: -w -c -d -t -B" 
+    echo "    -w wipes all the files in . ending with .out or .sxx"
+    echo "    -c arg cleans \$arg.out \$arg.sxx"
+    echo "    -t, -d, -B passes those arguments to sxx"
+}
+
+# quit if no argument is provided
+if [ "$#" -lt 1 ]; then
+    echo "needs an argument"
+    usage
+    exit 1
+fi
+
+# args is an array
+args=()
+
+while getopts "h?dtBocw" opt; do
+    case "$opt" in
+    h|\?)
+        usage
+    ;;
+        d)  DEBUG=true
+#             args[0]="-d"
+            args+="-d "
+    ;;
+        t)  TRACE=true
+#             args[1]="-t"
+            args+="-t "
+    ;;
+        t)  BANNER=true
+#             args[2]="-B"
+            args+="-B "
+    ;;
+        o)  OUTPUT=true
+    ;;
+        c)  CLEAN=true
+    ;;
+        w)  WIPE=true
+    ;;
+    esac
+done
+
+shift $((OPTIND-1))
+
+if [ $WIPE ]; then
+#     rm "*.out" "*.sxx"
+    for filename in *.out ; do
+        rm "$filename" 2> /dev/null
+    done
+    for filename in *.sxx ; do
+        rm "$filename" 2> /dev/null
+    done
+    # return # bash doesn't do this? wtf?
+    exit "$?"
+fi
+
+# if file.sax and file.sxxl exist, then
+# tab-completion will only take you as far as the '.'
+# this is a basename workaround for optimal laziness
+
+name=$(basename "$1" '.sax')
+name=$(basename "$name" '.')
+echo "name is $name"
+
+if [ $CLEAN ]; then
+    rm "$name.out" "$name.sxx"
+#     return # bash doesn't do this? wtf?
+    exit "$?"
+fi
+
+sax "$name.sax" > "$name.out" &&
+sxxl "$name.out" > "$name.sxx" 
+
+if [ $OUTPUT ]; then
+    return
+fi
+
+sxx ${args[@]} "$name.sxx"
