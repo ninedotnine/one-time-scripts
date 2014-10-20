@@ -1,0 +1,59 @@
+#!/bin/dash
+
+# this script is used to compare the results of the reference assembler 
+# against my own scanner. 
+
+# you can provide an argument to test a single file. if the output is not
+# equal, it will run vimdiff on the outputs, otherwise outputs "cool".
+
+# with no arguments provided, it will test every file in the output.
+# the return status will be zero if all files are equal, otherwise the 
+# exit status will equal the number of different outputs.
+
+# makes output prettier
+boldon=$(tput bold)
+boldoff=$(tput sgr0)
+
+echo "compiling files..."
+javac -Xlint -Xmaxerrs 5 *.java || exit
+
+# will be returned to the os
+exit_status=0
+
+# location of the reference implementation
+# ref="/home/student/Classes/463/Examples/Scanner/Scantest/scanner.jar"
+ref="/usr/bin/local/sax"
+
+# sax adds the date to the file, so we wanna remove that with grep
+current_date=$(date | cut -c 1-9)
+
+if [ "$#" -eq 1 ]; then
+    # if argument is provided, test only that file 
+    filename="$1"
+    java Sax "$filename" | grep -v "$current_date" > mine.txt
+    sax "$filename" | grep -v "$current_date" > ref.txt
+    # if files aren't equal, drop into vimdiff
+    diff --brief "mine.txt" "ref.txt" \
+        && echo "cool!" || vimdiff -R "mine.txt" "ref.txt" 
+else
+    # else just compare everything in the test directory
+    echo "running assemblers, comparing output..."
+#     for filename in $(ls -1 "./Test/*.sax"); do
+    for filename in $(find -L ./Test/ -name "*.sax"); do
+        echo "$boldon $filename $boldoff" 
+        java Sax "$filename" | grep -v "$current_date" > mine.txt
+        sax "$filename" | grep -v "$current_date" > ref.txt
+        diff --brief "mine.txt" "ref.txt" \
+            && echo "cool!" || exit_status=$((exit_status+1))
+    done
+fi
+
+# if [ "$exit_status" -eq 0 ]; then
+#     echo "☺"
+# fi
+
+echo "cleaning up..."
+rm "mine.txt" "ref.txt"
+rm *.class
+
+return "$exit_status"
